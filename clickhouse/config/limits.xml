@@ -1,0 +1,6 @@
+<clickhouse>
+    <!-- Кап памяти сервера: кривой запрос упадёт с ошибкой, а не уронит контейнер -->
+    <max_server_memory_usage>1800000000</max_server_memory_usage>
+    <max_concurrent_queries>20</max_concurrent_queries>
+    <mark_cache_size>268435456</mark_cache_size>
+</clickhouse>

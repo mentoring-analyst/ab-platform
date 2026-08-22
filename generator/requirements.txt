@@ -1,0 +1,5 @@
+numpy==2.2.1
+psycopg2-binary==2.9.10
+clickhouse-connect==0.8.11
+requests==2.32.3
+PyYAML==6.0.2

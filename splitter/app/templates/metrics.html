@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Метрики — AB Platform{% endblock %}
+{% block content %}
+<h1>Реестр метрик</h1>
+{% if ok %}<div class="note note-ok">Метрика прошла проверку в ClickHouse и сохранена — теперь её можно прикреплять к экспериментам.</div>{% endif %}
+
+{% for m in metrics %}
+<section class="panel">
+  <div class="row-between">
+    <div><span class="code">{{ m.code }}</span> <b>{{ m.name }}</b> <span class="badge badge-kind">{{ m.kind }}</span></div>
+  </div>
+  {% if m.description %}<div class="muted" style="margin-top: 6px">{{ m.description }}</div>{% endif %}
+  <details>
+    <summary class="muted">SQL-шаблон</summary>
+    <pre class="sqlblock">{{ m.sql_template }}</pre>
+  </details>
+</section>
+{% endfor %}
+
+<section class="panel">
+  <h2>Новая метрика</h2>
+  <p class="muted">SQL выполняется в ClickHouse за один день и один эксперимент. Контракт:
+  используй плейсхолдеры <code>{experiment_id:UInt32}</code> и <code>{date:Date}</code>,
+  верни колонки <code>variant, numerator, denominator, value</code>.
+  Перед сохранением запрос прогоняется в ClickHouse — синтаксическая ошибка или
+  опечатка в имени колонки вернётся сюда как сообщение об ошибке.</p>
+
+  <form method="post" action="/admin/metrics">
+    <div class="grid2">
+      <label>Код
+        <input name="code" required pattern="[a-z0-9_]{3,64}" placeholder="avg_trip_price">
+      </label>
+      <label>Тип метрики
+        <select name="kind">
+          <option value="proportion">доля (конверсия)</option>
+          <option value="mean">среднее на пользователя</option>
+          <option value="ratio">отношение (юнит анализа мельче юнита рандомизации)</option>
+        </select>
+      </label>
+    </div>
+    <label>Название
+      <input name="name" required placeholder="Средний чек поездки">
+    </label>
+    <label>SQL-шаблон
+      <textarea name="sql_template" class="sqlinput" rows="14" required spellcheck="false">
+SELECT
+    a.variant AS variant,
+    -- TODO: числитель метрики
+    ... AS numerator,
+    -- TODO: знаменатель метрики
+    ... AS denominator,
+    numerator / denominator AS value
+FROM ab.events AS e
+INNER JOIN
+(
+    SELECT experiment_id, user_id, variant, assigned_at
+    FROM ab.assignments FINAL
+    WHERE experiment_id = {experiment_id:UInt32}
+) AS a ON a.user_id = e.user_id
+WHERE e.event_date = {date:Date}
+  AND e.event_ts >= a.assigned_at
+GROUP BY a.variant</textarea>
+    </label>
+    <label>Описание
+      <input name="description" placeholder="Что считает метрика и когда её использовать">
+    </label>
+    <button class="btn btn-primary" type="submit">Проверить в ClickHouse и сохранить</button>
+  </form>
+</section>
+{% endblock %}

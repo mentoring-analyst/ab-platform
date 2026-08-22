@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}{{ exp.code }} — AB Platform{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <span class="code">{{ exp.code }}</span>
+    <span class="badge badge-{{ exp.status }}">{{ status_ru[exp.status] }}</span>
+    {% if exp.start_virtual_ts %}<span class="muted">старт {{ exp.start_virtual_ts.strftime('%d.%m %H:%M') }}</span>{% endif %}
+    {% if exp.stop_virtual_ts %}<span class="muted">→ стоп {{ exp.stop_virtual_ts.strftime('%d.%m %H:%M') }}</span>{% endif %}
+  </div>
+  <div class="actions">
+    <a class="btn" href="/admin/experiments/{{ exp.code }}/edit">✎ Изменить</a>
+    {% if exp.status == 'draft' %}
+    <form method="post" action="/admin/experiments/{{ exp.code }}/start">
+      <button class="btn btn-primary">▶ Запустить</button>
+    </form>
+    {% elif exp.status == 'running' %}
+    <form method="post" action="/admin/experiments/{{ exp.code }}/stop"
+          onsubmit="return confirm('Остановить эксперимент? Перезапустить его будет нельзя.')">
+      <button class="btn btn-danger">■ Остановить</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<h1>{{ exp.name }}</h1>
+{% if exp.hypothesis %}<p class="hypothesis">{{ exp.hypothesis }}</p>{% endif %}
+
+<div class="grid2">
+  <section class="panel">
+    <h2>Варианты</h2>
+    {% for v in exp.variants %}
+    <div class="variant-line">
+      <span class="dot" style="background: {{ colors[loop.index0 % 6] }}"></span>
+      <b>{{ v.name }}</b>
+      <span class="muted">{{ v.share }}% трафика</span>
+    </div>
+    {% endfor %}
+    <div class="variant-line">
+      <span class="dot" style="background: #d1d5db"></span>
+      <span class="muted">в эксперименте {{ exposure }}% трафика аудитории{% if exposure < 100 %}, вне — {{ 100 - exposure }}%{% endif %}</span>
+    </div>
+    <h2>Метрики</h2>
+    {% if not exp.metrics %}<div class="muted">не прикреплены — без целевой метрики эксперимент не запустится</div>{% endif %}
+    {% for m in exp.metrics %}
+    <div class="variant-line">
+      <b>{{ m.name }}</b>
+      <span class="badge badge-role-{{ m.role }}">{{ role_ru[m.role] }}</span>
+      {% if m.code in metric_errors %}<span class="badge badge-error" title="{{ metric_errors[m.code].error }}">⚠ не считается</span>{% endif %}
+    </div>
+    {% if m.code in metric_errors %}
+    <div class="metric-error">Последняя ошибка ({{ metric_errors[m.code].date }}): {{ metric_errors[m.code].error[:300] }}</div>
+    {% endif %}
+    {% endfor %}
+  </section>
+
+  <section class="panel">
+    <h2>Аудитория под фильтрами</h2>
+    <div class="bignum">{{ '{:,}'.format(preview.total_users).replace(',', ' ') }}</div>
+    <small class="muted">пользователей проходят фильтры; в эксперимент попадают постепенно, при первом заходе</small>
+    <div class="region-list">
+      {% for reg, cnt in preview.by_region.items() %}
+      <div class="row-between"><span>{{ reg }}</span><b>{{ cnt }}</b></div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+
+<section class="panel">
+  <h2>Набор аудитории</h2>
+  <table class="table" id="statsTable">
+    <thead>
+      <tr><th>Вариант</th><th>Пользователей</th><th>Факт. доля</th><th>План</th><th>Первый exposure</th><th>Последний</th></tr>
+    </thead>
+    <tbody><tr><td colspan="6" class="muted">загрузка…</td></tr></tbody>
+  </table>
+  <small class="muted">Обновляется каждые 10 секунд. Кривая набора, SRM и метрики — на дашборде в Superset.</small>
+</section>
+
+<script>
+const CODE = {{ exp.code | tojson }};
+const PLAN = {{ plan_shares | tojson }};
+
+async function refreshStats() {
+  try {
+    const r = await fetch(`/experiments/${CODE}/stats`);
+    if (!r.ok) return;
+    const data = await r.json();
+    const total = data.variants.reduce((s, v) => s + v.users, 0);
+    const tb = document.querySelector('#statsTable tbody');
+    tb.innerHTML = data.variants.map(v => `
+      <tr>
+        <td><b>${v.variant}</b></td>
+        <td>${v.users}</td>
+        <td>${total ? (100 * v.users / total).toFixed(1) : 0}%</td>
+        <td>${PLAN[v.variant] ?? '—'}%</td>
+        <td>${(v.first_exposure ?? '—').replace('T', ' ')}</td>
+        <td>${(v.last_exposure ?? '—').replace('T', ' ')}</td>
+      </tr>`).join('')
+      || '<tr><td colspan="6" class="muted">в эксперимент пока никто не попал</td></tr>';
+  } catch (e) { /* сеть моргнула — обновимся в следующий раз */ }
+}
+refreshStats();
+setInterval(refreshStats, 10000);
+</script>
+{% endblock %}

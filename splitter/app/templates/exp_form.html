@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% set is_edit = mode == 'edit' %}
+{% set draft_editable = (not is_edit) or exp.status == 'draft' %}
+{% block title %}{{ 'Изменить' if is_edit else 'Новый' }} эксперимент — AB Platform{% endblock %}
+{% block content %}
+<h1>{{ ('Изменить: ' ~ exp.code) if is_edit else 'Новый эксперимент' }}</h1>
+
+{% if is_edit and not draft_editable %}
+<div class="note">Эксперимент уже {{ 'идёт' if exp.status == 'running' else 'остановлен' }} —
+менять можно только название, гипотезу и владельца. Варианты, аудитория и метрики
+заморожены: их изменение сломало бы сплит и сравнимость групп.</div>
+{% endif %}
+
+<form method="post" action="{{ '/admin/experiments/' ~ exp.code ~ '/edit' if is_edit else '/admin/experiments' }}" id="expform">
+
+<section class="panel">
+  <h2>Основное</h2>
+  <div class="grid2">
+    <label>Код
+      {% if is_edit %}
+      <input value="{{ exp.code }}" disabled>
+      <small class="muted">код зафиксирован — он уже в таблицах</small>
+      {% else %}
+      <input name="code" required pattern="[a-z0-9_]{3,64}" placeholder="pricing_point_estimate">
+      <small class="muted">латиница, цифры, подчёркивания — попадёт в таблицы и дашборд</small>
+      {% endif %}
+    </label>
+    <label>Владелец
+      <input name="owner" value="{{ exp.owner if is_edit else '' }}" placeholder="@telegram">
+    </label>
+  </div>
+  <label>Название
+    <input name="name" required value="{{ exp.name if is_edit else '' }}" placeholder="Точечная цена вместо диапазона">
+  </label>
+  <label>Гипотеза
+    <textarea name="hypothesis" rows="2" placeholder="Если мы …, то для аудитории … метрика … изменится на …">{{ exp.hypothesis if is_edit else '' }}</textarea>
+  </label>
+</section>
+
+{% if draft_editable %}
+<section class="panel">
+  <h2>Варианты и трафик</h2>
+  <p class="muted">Доли — проценты от <b>всего трафика аудитории</b>. Сумма может быть меньше 100%:
+  остаток не попадает в эксперимент. Например, A 20% + B 20% — эксперимент на 40% трафика.</p>
+  <div id="variants" {% if is_edit %}data-initial='{{ exp.variants | tojson }}'{% endif %}></div>
+  <button type="button" class="btn btn-ghost" id="addVariant">+ Добавить вариант</button>
+  <div class="sumbar">
+    <div class="sumbar-track" id="sumTrack"></div>
+    <div class="sumlabel" id="sumLabel"></div>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Аудитория</h2>
+  <div class="field-label">Регионы</div>
+  <div class="chips">
+    {% for r in regions %}
+    <label class="chip">
+      <input type="checkbox" name="regions" value="{{ r.region_code }}"
+        {% if is_edit and exp.audience_filters.regions and r.region_code in exp.audience_filters.regions %}checked{% endif %}>
+      <span>{{ r.region_name }}</span>
+    </label>
+    {% endfor %}
+  </div>
+  <div class="grid2">
+    <div>
+      <div class="field-label">Платформы</div>
+      <div class="chips">
+        {% for p in ['ios', 'android'] %}
+        <label class="chip">
+          <input type="checkbox" name="platforms" value="{{ p }}"
+            {% if is_edit and exp.audience_filters.platforms and p in exp.audience_filters.platforms %}checked{% endif %}>
+          <span>{{ 'iOS' if p == 'ios' else 'Android' }}</span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+    <label>Минимум поездок в предпериоде
+      <input type="number" name="min_trips_preperiod" min="0"
+             value="{{ exp.audience_filters.min_trips_preperiod if is_edit else 0 }}">
+    </label>
+  </div>
+  <small class="muted">Ничего не выбрано = фильтра нет (вся аудитория)</small>
+</section>
+
+<section class="panel">
+  <h2>Метрики</h2>
+  {% for m in metrics %}
+  <div class="metric-row">
+    <label class="metric-check">
+      <input type="checkbox" name="metric_codes" value="{{ m.code }}" {% if m.code in attached %}checked{% endif %}>
+      <span><b>{{ m.name }}</b> <span class="badge badge-kind">{{ m.kind }}</span></span>
+    </label>
+    <select name="role_{{ m.code }}">
+      {% for role, label in [('target', 'целевая'), ('proxy', 'прокси'), ('guardrail', 'защитная')] %}
+      <option value="{{ role }}" {% if attached.get(m.code, 'proxy') == role %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="metric-desc muted">{{ m.description }}</div>
+  {% endfor %}
+  <small class="muted">Для запуска нужна минимум одна «целевая». Своей метрики нет в списке?
+  <a href="/admin/metrics">Заведи её с SQL-запросом</a> — и она появится здесь.</small>
+</section>
+{% endif %}
+
+<button class="btn btn-primary btn-lg" type="submit">{{ 'Сохранить' if is_edit else 'Создать эксперимент' }}</button>
+{% if is_edit %}<a class="btn btn-lg" href="/admin/experiments/{{ exp.code }}">Отмена</a>{% endif %}
+</form>
+{% if draft_editable %}<script src="/static/admin.js"></script>{% endif %}
+{% endblock %}

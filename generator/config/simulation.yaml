@@ -1,0 +1,58 @@
+# Параметры симуляции. Распределения подобраны под реалистичное поведение:
+# тяжёлый хвост частоты поездок, сезонность по часам и дням недели,
+# лог-нормальные цены с разбросом по регионам (уровни цен ориентированы на NYC).
+
+seed: 20260601
+
+# Виртуальный день 1 истории. Живое время начинается после HISTORY_DAYS дней.
+sim_start_date: "2026-06-01"
+
+regions:
+  manhattan:     {price_mu: 2.95}
+  brooklyn:      {price_mu: 2.75}
+  queens:        {price_mu: 2.80}
+  bronx:         {price_mu: 2.65}
+  staten_island: {price_mu: 2.70}
+  jersey_city:   {price_mu: 2.85}
+
+price_sigma: 0.32
+
+# Гетерогенность пользователей: частота сессий ~ Gamma (тяжёлый хвост:
+# небольшая доля пользователей делает непропорционально много поездок)
+user_latents:
+  session_rate_gamma_shape: 0.55
+  session_rate_gamma_scale: 0.65
+  session_rate_cap: 8.0
+  price_sens_mean: 1.0
+  price_sens_std: 0.35
+
+platform_ios_share: 0.45
+
+tariffs:
+  uberx:   {share: 0.75, multiplier: 1.00}
+  comfort: {share: 0.15, multiplier: 1.35}
+  uberxl:  {share: 0.10, multiplier: 1.25}
+
+# Множители дня недели (0 = понедельник)
+dow_multipliers: [1.0, 1.0, 1.0, 1.05, 1.15, 1.20, 0.90]
+
+# Профили распределения сессий по часам (нормализуются в коде)
+hour_profile_weekday: [1, 1, 1, 1, 1, 2, 4, 8, 10, 6, 4, 4, 5, 5, 4, 5, 7, 10, 11, 8, 6, 5, 3, 2]
+hour_profile_weekend: [3, 2, 1, 1, 1, 1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 7, 7, 8, 8, 8, 7, 6, 5, 4]
+
+# Сурж по часам: пики утром и вечером
+surge_by_hour: [1.1, 1.1, 1.0, 1.0, 1.0, 1.0, 1.15, 1.25, 1.25, 1.1, 1.0, 1.0,
+                1.0, 1.0, 1.0, 1.05, 1.2, 1.45, 1.45, 1.3, 1.15, 1.1, 1.1, 1.1]
+
+# Воронка: app_open -> screen_view -> tariff_select -> order_confirm -> trip_complete / order_cancelled
+funnel:
+  p_screen_view: 0.82
+  p_tariff_select: 0.72
+  p_order_base: 0.52
+  price_beta: 0.28          # штраф к конверсии за относительную дороговизну (сурж)
+  p_cancel: 0.08
+  price_noise_sigma: 0.05   # шум фактической цены вокруг оценки
+
+# Как показывается цена (вариант A и весь предпериод): диапазон
+price_range_low: 0.90
+price_range_high: 1.25

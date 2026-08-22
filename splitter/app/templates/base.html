@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}AB Platform{% endblock %}</title>
+<link rel="stylesheet" href="/static/admin.css">
+</head>
+<body>
+<header class="topnav">
+  <a class="brand" href="/admin">🧪 AB Platform</a>
+  <nav>
+    <a href="/admin">Эксперименты</a>
+    <a href="/admin/metrics">Метрики</a>
+    <a href="/docs">API</a>
+  </nav>
+  <div class="simclock">
+    {% if sim_now %}⏱ виртуальное время: <b>{{ sim_now.strftime('%d.%m.%Y %H:%M') }}</b>
+    {% else %}⏱ симуляция инициализируется…{% endif %}
+  </div>
+  <a href="/admin/new" class="btn btn-primary btn-sm">+ Эксперимент</a>
+</header>
+<main class="container">
+{% if error %}<div class="flash">{{ error }}</div>{% endif %}
+{% block content %}{% endblock %}
+</main>
+</body>
+</html>

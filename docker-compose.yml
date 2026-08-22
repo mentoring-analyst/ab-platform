@@ -1,0 +1,196 @@
+# A/B Platform — учебный стенд Симулятора бигтеха
+#
+# Лёгкий профиль (базы + сплитовалка + генератор):  docker compose up -d
+# Полный профиль (+ Airflow, + Superset):           docker compose --profile full up -d
+#
+# Лимиты памяти на каждом сервисе стоят намеренно: прожорливый процесс упадёт
+# внутри своего контейнера с кодом 137, не утащив за собой соседей (см. docs/troubleshooting.md).
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ab-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-platform}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-platform}
+      POSTGRES_DB: ${POSTGRES_DB:-platform}
+    ports:
+      - "5434:5432"   # 5434 снаружи, чтобы не конфликтовать с data-platform
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-platform} -d ${POSTGRES_DB:-platform}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    container_name: ab-clickhouse
+    environment:
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-default}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-platform}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    ports:
+      - "8123:8123"   # HTTP (DataGrip/DBeaver, clickhouse-connect)
+      - "9001:9000"   # native
+    volumes:
+      - ch-data:/var/lib/clickhouse
+      - ./clickhouse/init:/docker-entrypoint-initdb.d:ro
+      - ./clickhouse/config/limits.xml:/etc/clickhouse-server/config.d/limits.xml:ro
+      - ./clickhouse/config/users-limits.xml:/etc/clickhouse-server/users.d/limits.xml:ro
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8123/ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+  splitter:
+    build: ./splitter
+    container_name: ab-splitter
+    environment:
+      PG_DSN: postgresql://${POSTGRES_USER:-platform}:${POSTGRES_PASSWORD:-platform}@postgres:5432/${POSTGRES_DB:-platform}
+      CH_HOST: clickhouse
+      CH_PORT: 8123
+      CH_USER: ${CLICKHOUSE_USER:-default}
+      CH_PASSWORD: ${CLICKHOUSE_PASSWORD:-platform}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  generator:
+    build: ./generator
+    container_name: ab-generator
+    environment:
+      PG_DSN: postgresql://${POSTGRES_USER:-platform}:${POSTGRES_PASSWORD:-platform}@postgres:5432/${POSTGRES_DB:-platform}
+      CH_HOST: clickhouse
+      CH_PORT: 8123
+      CH_USER: ${CLICKHOUSE_USER:-default}
+      CH_PASSWORD: ${CLICKHOUSE_PASSWORD:-platform}
+      SPLITTER_URL: http://splitter:8000
+      SIM_ACCEL: ${SIM_ACCEL:-144}
+      HISTORY_DAYS: ${HISTORY_DAYS:-45}
+      POP_PER_REGION: ${POP_PER_REGION:-25000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+      splitter:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+
+  # ---------- Полный профиль: --profile full ----------
+
+  airflow-init:
+    build: ./airflow
+    profiles: ["full"]
+    environment: &airflow-env
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__PARALLELISM: "4"
+      AIRFLOW__CORE__MAX_ACTIVE_TASKS_PER_DAG: "4"
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-platform}:${POSTGRES_PASSWORD:-platform}@postgres:5432/airflow
+      AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY:-ab-platform-airflow}
+      # Подключения для DAG-ов
+      PG_DSN: postgresql://${POSTGRES_USER:-platform}:${POSTGRES_PASSWORD:-platform}@postgres:5432/${POSTGRES_DB:-platform}
+      CH_HOST: clickhouse
+      CH_PORT: "8123"
+      CH_USER: ${CLICKHOUSE_USER:-default}
+      CH_PASSWORD: ${CLICKHOUSE_PASSWORD:-platform}
+    command: >
+      bash -c "airflow db migrate &&
+      airflow users create --username ${AIRFLOW_ADMIN_USER:-admin} --password ${AIRFLOW_ADMIN_PASSWORD:-admin}
+      --firstname Admin --lastname Admin --role Admin --email admin@example.com"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  airflow-webserver:
+    build: ./airflow
+    profiles: ["full"]
+    environment: *airflow-env
+    command: airflow webserver
+    ports:
+      - "8081:8080"   # 8081 снаружи, чтобы не конфликтовать с data-platform
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags:ro
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+    deploy:
+      resources:
+        limits:
+          memory: 1200M
+
+  airflow-scheduler:
+    build: ./airflow
+    profiles: ["full"]
+    environment: *airflow-env
+    command: airflow scheduler
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags:ro
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+    deploy:
+      resources:
+        limits:
+          memory: 1500M
+
+  superset:
+    build: ./superset
+    profiles: ["full"]
+    container_name: ab-superset
+    environment:
+      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY:-ab-platform-superset-secret}
+      SUPERSET_ADMIN_USER: ${SUPERSET_ADMIN_USER:-admin}
+      SUPERSET_ADMIN_PASSWORD: ${SUPERSET_ADMIN_PASSWORD:-admin}
+      DATABASE_DIALECT: postgresql+psycopg2
+      DATABASE_HOST: postgres
+      DATABASE_PORT: "5432"
+      DATABASE_DB: superset
+      DATABASE_USER: ${POSTGRES_USER:-platform}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-platform}
+    ports:
+      - "8089:8088"   # 8089 снаружи, чтобы не конфликтовать с data-platform
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 1500M
+
+volumes:
+  pg-data:
+  ch-data:

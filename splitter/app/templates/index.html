@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Эксперименты</h1>
+{% if not experiments %}
+<div class="empty">Пока пусто — <a href="/admin/new">создай первый эксперимент</a>.</div>
+{% else %}
+<div class="cards">
+  {% for e in experiments %}
+  <a class="card" href="/admin/experiments/{{ e.code }}">
+    <div class="row-between">
+      <span class="code">{{ e.code }}</span>
+      <span class="badge badge-{{ e.status }}">{{ status_ru[e.status] }}</span>
+    </div>
+    <h3>{{ e.name }}</h3>
+    <div class="meta">
+      <span>{{ e.variants | length }} вар.</span>
+      <span>👥 {{ counts.get(e.experiment_id, 0) }}</span>
+      {% if e.owner %}<span>{{ e.owner }}</span>{% endif %}
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

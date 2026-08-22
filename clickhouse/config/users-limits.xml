@@ -1,0 +1,9 @@
+<clickhouse>
+    <profiles>
+        <default>
+            <!-- Лимит на один запрос: случайное декартово произведение убьётся с понятной ошибкой -->
+            <max_memory_usage>536870912</max_memory_usage>
+            <max_execution_time>60</max_execution_time>
+        </default>
+    </profiles>
+</clickhouse>
