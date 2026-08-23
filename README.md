@@ -367,6 +367,9 @@ cd ~/ab-platform && make up-full
 - **Airflow** — http://localhost:8081, логин `admin`, пароль `admin`;
 - **Superset** — http://localhost:8089, логин `admin`, пароль `admin`.
 
+Первый запуск инициализируется минуту-две (миграции баз) — если страница
+пустая или не открывается, подожди и обнови (Cmd+R / F5).
+
 1. **В Airflow включи DAG `ab_experiment_metrics`** (тумблер слева от имени).
    Каждые 5 минут он реплицирует абшницу в ClickHouse и считает дневные метрики
    всех активных экспериментов в витрину `ab.experiment_metrics_daily`.
