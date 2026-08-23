@@ -29,13 +29,20 @@ def validate_metric_sql(sql_template: str) -> None:
             "WHERE e.event_date = {date:Date} AND e.event_ts >= a.assigned_at "
             "GROUP BY a.variant",
         )
+    params = {"experiment_id": 0, "date": date(2000, 1, 1)}
     try:
-        res = ch.client().query(
-            sql_template, parameters={"experiment_id": 0, "date": date(2000, 1, 1)}
-        )
+        res = ch.client().query(sql_template, parameters=params)
+        columns = set(res.column_names)
+        if not columns:
+            # при пустом результате нативный протокол не присылает структуру —
+            # узнаём колонки через DESCRIBE
+            desc = ch.client().query(
+                f"DESCRIBE ({sql_template.rstrip().rstrip(';')})", parameters=params
+            )
+            columns = {row[0] for row in desc.result_rows}
     except Exception as e:
         raise HTTPException(422, f"SQL не прошёл проверку в ClickHouse: {str(e)[:600]}")
-    missing_cols = REQUIRED_COLUMNS - set(res.column_names)
+    missing_cols = REQUIRED_COLUMNS - columns
     if missing_cols:
         raise HTTPException(
             422,
