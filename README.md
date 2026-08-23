@@ -370,14 +370,10 @@ cd ~/ab-platform && make up-full
 1. **В Airflow включи DAG `ab_experiment_metrics`** (тумблер слева от имени).
    Каждые 5 минут он реплицирует абшницу в ClickHouse и считает дневные метрики
    всех активных экспериментов в витрину `ab.experiment_metrics_daily`.
-   Прочитай его код ([airflow/dags/ab_experiment_metrics.py](airflow/dags/ab_experiment_metrics.py))
-   и ответь себе: почему он идемпотентный? почему в нём нет `catchup` и `{{ ds }}`?
-   что произойдёт, если SQL одной из метрик сломается?
 2. **В Superset собери дашборд** по гайду
    [docs/superset_dashboard.md](docs/superset_dashboard.md): текущий виртуальный
    день, кривая набора аудитории по группам, SRM-таблица, динамика целевой
-   и защитных метрик. Подписывай всё человеческим языком — продакт не обязан
-   знать слово SRM.
+   и защитных метрик.
 
 ### Своя метрика через SQL
 
