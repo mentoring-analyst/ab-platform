@@ -114,15 +114,79 @@ docker compose logs -f generator
 
 ### 0.5. Подключи SQL-клиент
 
-Поставь [DBeaver](https://dbeaver.io/) (бесплатный) или DataGrip и заведи два подключения:
+Работать с базами будем из SQL-клиента. Подойдёт [DBeaver](https://dbeaver.io/download/)
+(бесплатный) или DataGrip (платный, но у студентов часто есть лицензия JetBrains).
+Нужно завести **два подключения** — к PostgreSQL и к ClickHouse.
 
-**PostgreSQL**: host `localhost`, port `5434`, database `platform`,
-user `platform`, password `platform`.
+Параметры для справки:
 
-**ClickHouse**: host `localhost`, port `8123`, user `default`, password `platform`
-(в DBeaver выбери драйвер ClickHouse; при первом подключении он скачается сам).
+| | PostgreSQL | ClickHouse |
+|---|---|---|
+| Host | `localhost` | `localhost` |
+| Port | **`5434`** (не стандартный 5432!) | `8123` |
+| Database | `platform` | `ab` (можно оставить пустым) |
+| User | `platform` | `default` |
+| Password | `platform` | `platform` |
 
-Проверь оба:
+<details>
+<summary><b>DBeaver: пошагово</b></summary>
+
+**PostgreSQL:**
+
+1. Скачай и установи DBeaver Community: https://dbeaver.io/download/
+2. Меню **База данных → Новое соединение** (или иконка «вилка с плюсом» слева сверху).
+3. В списке выбери **PostgreSQL** → «Далее».
+4. Заполни поля: Host `localhost`, Port `5434`, Database `platform`,
+   Username `platform`, Password `platform`. Поставь галочку «Save password».
+5. Нажми **«Тест соединения»**. При первом разе DBeaver предложит скачать
+   драйвер PostgreSQL — жми «Скачать». Должна появиться надпись «Connected».
+6. «Готово». Слева в дереве раскрой соединение: `platform` → Схемы —
+   там должны быть схемы **core** (пользователи) и **ab** (эксперименты).
+   Если их не видно — нажми F5 (обновить).
+
+**ClickHouse:**
+
+1. Снова **База данных → Новое соединение**, в поиске набери `clickhouse`.
+2. Выбери драйвер **ClickHouse** (именно ClickHouse, не «ClickHouse (Legacy)») → «Далее».
+3. Заполни: Host `localhost`, Port `8123`, Database — оставь пустым или `ab`,
+   Username `default`, Password `platform`, галочка «Save password».
+4. «Тест соединения» → «Скачать» драйвер → «Connected» → «Готово».
+5. В дереве: база **ab** → таблицы `events`, `assignments`, `experiment_metrics_daily`.
+
+**Как выполнить запрос:** правой кнопкой по соединению → «SQL-редактор» →
+«Новый SQL-редактор» (или Cmd/Ctrl+]). Пишешь запрос, выполняешь Cmd/Ctrl+Enter.
+Проверь, что редактор привязан к нужному соединению — оно выбирается в выпадашке
+на панели сверху.
+
+</details>
+
+<details>
+<summary><b>DataGrip: пошагово</b></summary>
+
+**PostgreSQL:**
+
+1. В окне Database Explorer нажми **+ → Data Source → PostgreSQL**.
+2. Заполни: Host `localhost`, Port `5434`, Database `platform`,
+   User `platform`, Password `platform`.
+3. Внизу окна будет предупреждение «Download missing driver files» — нажми **Download**.
+4. Нажми **Test Connection** — должна появиться зелёная галочка. Затем OK.
+5. Важная особенность DataGrip: по умолчанию он показывает не все схемы.
+   Рядом с соединением нажми на выпадашку схем (или вкладка **Schemas**
+   в свойствах источника) и отметь галочками **core** и **ab**.
+
+**ClickHouse:**
+
+1. **+ → Data Source → ClickHouse**.
+2. Host `localhost`, Port `8123`, User `default`, Password `platform`.
+3. Download драйвера → **Test Connection** → OK.
+4. В списке схем отметь базу **ab**.
+
+**Как выполнить запрос:** открой консоль источника (правой кнопкой по
+соединению → New → Query Console), пиши запрос и выполняй Cmd/Ctrl+Enter.
+
+</details>
+
+Проверь оба подключения запросами:
 
 ```sql
 -- Postgres: сколько пользователей в каждом регионе
