@@ -95,7 +95,7 @@ CREATE TABLE ab.assignments (
 
 CREATE INDEX idx_assignments_assigned_at ON ab.assignments (experiment_id, assigned_at);
 
--- Журнал ошибок расчёта метрик: пишет Airflow DAG, если SQL метрики упал.
+-- Журнал ошибок расчёта метрик: пишет фоновый воркер, если SQL метрики упал.
 -- Успешный пересчёт того же дня удаляет запись.
 CREATE TABLE ab.metric_errors (
     experiment_id INT NOT NULL,
