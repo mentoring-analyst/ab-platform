@@ -25,6 +25,11 @@ user_latents:
   session_rate_cap: 8.0
   price_sens_mean: 1.0
   price_sens_std: 0.35
+  # «Спящая» часть базы: почти не заходит в приложение, как неактивные
+  # пользователи в настоящем проде. Из-за них кривая набора эксперимента
+  # выходит на плато заметно ниже 100% базы.
+  dormant_share: 0.35
+  dormant_rate_factor: 0.02
 
 platform_ios_share: 0.45
 

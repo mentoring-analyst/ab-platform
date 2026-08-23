@@ -34,6 +34,10 @@ class Simulation:
         self.platform = np.where(rng.random(self.n) < cfg["platform_ios_share"], "ios", "android")
         epoch = date.fromisoformat(cfg["sim_start_date"])
         self.signup_dates = [epoch - timedelta(days=int(d)) for d in rng.integers(1, 730, self.n)]
+        dormant = rng.random(self.n) < ul.get("dormant_share", 0.0)
+        self.session_rate = np.where(
+            dormant, self.session_rate * ul.get("dormant_rate_factor", 0.02), self.session_rate
+        )
 
         self.price_mu = np.array([cfg["regions"][r]["price_mu"] for r in self.region_codes])
         tariffs = cfg["tariffs"]
