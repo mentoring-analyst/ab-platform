@@ -1,26 +1,22 @@
-.PHONY: check up up-full down reset logs ps
+.PHONY: check up down reset logs ps
 
 # Предполётная проверка: докер запущен, памяти хватает, .env на месте
 check:
 	@bash scripts/preflight.sh
 
-# Лёгкий профиль: Postgres + ClickHouse + сплитовалка + генератор (~3 ГБ)
+# Весь стек: Postgres + ClickHouse + сплитовалка + генератор
 up: check
 	docker compose up -d --build
 
-# Полный профиль: + Superset для бонусного дашборда
-up-full: check
-	docker compose --profile full up -d --build
-
 down:
-	docker compose --profile full down
+	docker compose down
 
 # Полный сброс: удаляет ВСЕ данные (базы, историю, эксперименты)
 reset:
-	docker compose --profile full down -v
+	docker compose down -v
 
 logs:
 	docker compose logs -f --tail=100
 
 ps:
-	docker compose --profile full ps
+	docker compose ps

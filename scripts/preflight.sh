@@ -28,14 +28,12 @@ echo "✅ Docker запущен"
 # 2. Памяти, выделенной докеру, хватает
 MEM_GB=$(( MEM_BYTES / 1024 / 1024 / 1024 ))
 if [ "$MEM_GB" -lt 4 ]; then
-    echo "❌ Докеру выделено ${MEM_GB} ГБ — мало даже для лёгкого профиля (нужно 4+, для полного 8+)."
-    FAIL=1
-elif [ "$MEM_GB" -lt 8 ]; then
-    echo "⚠️  Докеру выделено ${MEM_GB} ГБ: лёгкий профиль (make up) поместится, полный (make up-full) — нет."
+    echo "❌ Докеру выделено ${MEM_GB} ГБ — нужно минимум 4."
     echo "   Как поднять лимит: Mac — Docker Desktop → Settings → Resources → Memory;"
-    echo "   Windows — файл %UserProfile%\\.wslconfig, секция [wsl2], memory=8GB, затем wsl --shutdown."
+    echo "   Windows — файл %UserProfile%\\.wslconfig, секция [wsl2], memory=4GB, затем wsl --shutdown."
+    FAIL=1
 else
-    echo "✅ Докеру выделено ${MEM_GB} ГБ — хватает на полный профиль"
+    echo "✅ Докеру выделено ${MEM_GB} ГБ — хватает"
 fi
 
 # 3. Свободный диск (образы + данные ≈ 15 ГБ с запасом)
@@ -50,7 +48,7 @@ else
 fi
 
 # 4. Свободны ли порты
-for PORT in 5434 8000 8089 8123 9001; do
+for PORT in 5434 8000 8123 9001; do
     if lsof -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1; then
         echo "⚠️  Порт $PORT занят другим процессом — соответствующий сервис не поднимется."
     fi
@@ -70,4 +68,4 @@ if [ "$FAIL" -eq 1 ]; then
     exit 1
 fi
 echo ""
-echo "Всё готово. Дальше: make up (лёгкий профиль) или make up-full (со всеми сервисами)."
+echo "Всё готово. Дальше: make up"

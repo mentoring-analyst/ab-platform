@@ -1,7 +1,6 @@
 # A/B Platform — учебный стенд Симулятора бигтеха
 #
-# Основной профиль (базы + сплитовалка + генератор): docker compose up -d
-# Полный профиль (+ Superset для бонусного дашборда): docker compose --profile full up -d
+# Весь стек одной командой: docker compose up -d
 #
 # Лимиты памяти на каждом сервисе стоят намеренно: прожорливый процесс упадёт
 # внутри своего контейнера с кодом 137, не утащив за собой соседей (см. docs/troubleshooting.md).
@@ -112,33 +111,6 @@ services:
       resources:
         limits:
           memory: 768M
-
-  # ---------- Полный профиль (--profile full): + Superset для бонус-уровня ----------
-
-  superset:
-    build: ./superset
-    profiles: ["full"]
-    container_name: ab-superset
-    restart: unless-stopped
-    environment:
-      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY:-ab-platform-superset-secret}
-      SUPERSET_ADMIN_USER: ${SUPERSET_ADMIN_USER:-admin}
-      SUPERSET_ADMIN_PASSWORD: ${SUPERSET_ADMIN_PASSWORD:-admin}
-      DATABASE_DIALECT: postgresql+psycopg2
-      DATABASE_HOST: postgres
-      DATABASE_PORT: "5432"
-      DATABASE_DB: superset
-      DATABASE_USER: ${POSTGRES_USER:-platform}
-      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-platform}
-    ports:
-      - "8089:8088"   # 8089 снаружи, чтобы не конфликтовать с data-platform
-    depends_on:
-      postgres:
-        condition: service_healthy
-    deploy:
-      resources:
-        limits:
-          memory: 1500M
 
 volumes:
   pg-data:
