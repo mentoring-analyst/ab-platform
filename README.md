@@ -451,7 +451,7 @@ splitter/               # FastAPI: админка, сплитование, ре�
 generator/              # симулятор трафика: популяция, воронка, виртуальные часы
 postgres/init/          # схемы core (пользователи) и ab (эксперименты)
 clickhouse/init/        # ab.events, ab.assignments, витрина метрик
-templates/              # карточка эксперимента, ноутбук расчёта выборки
+templates/              # карточка, ноутбуки расчёта выборки и анализа
 docs/                   # troubleshooting, гайд ментора
 ```
 
