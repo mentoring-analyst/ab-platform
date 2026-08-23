@@ -36,6 +36,9 @@ def _ch():
     start_date=datetime(2026, 1, 1),
     catchup=False,
     max_active_runs=1,
+    # включается сам при появлении в Airflow: студенту не нужно трогать тумблеры,
+    # метрики появляются в админке автоматически
+    is_paused_upon_creation=False,
     tags=["ab-platform"],
 )
 def ab_experiment_metrics():

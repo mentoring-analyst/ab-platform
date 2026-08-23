@@ -68,13 +68,43 @@
 
 <section class="panel">
   <h2>Набор аудитории</h2>
+  <div class="bignum"><span id="totalUsers">—</span></div>
+  <small class="muted">пользователей уже попали в тест — обновляется каждые 10 секунд</small>
   <table class="table" id="statsTable">
     <thead>
       <tr><th>Вариант</th><th>Пользователей</th><th>Факт. доля</th><th>План</th><th>Первый exposure</th><th>Последний</th></tr>
     </thead>
     <tbody><tr><td colspan="6" class="muted">загрузка…</td></tr></tbody>
   </table>
-  <small class="muted">Обновляется каждые 10 секунд. Кривая набора, SRM и метрики — на дашборде в Superset.</small>
+  <small class="muted">Кривая набора и SRM-график — на дашборде в Superset.</small>
+</section>
+
+<section class="panel">
+  <h2>Метрики по дням</h2>
+  {% if not metrics_daily %}
+  <div class="muted">Пока пусто. Значения появляются, когда после старта эксперимента
+  закрывается первый полный виртуальный день (день симуляции ≈ 10 реальных минут),
+  и считаются автоматически в фоне — нужен полный профиль стека (<code>make up-full</code>).</div>
+  {% else %}
+  {% for m in metrics_daily %}
+  <div class="variant-line" {% if not loop.first %}style="margin-top: 16px"{% endif %}>
+    <b>{{ m.name }}</b>
+    <span class="badge badge-role-{{ m.role }}">{{ role_ru[m.role] }}</span>
+  </div>
+  <table class="table">
+    <thead>
+      <tr><th>Дата</th>{% for v in variant_names %}<th>{{ v }}</th>{% endfor %}</tr>
+    </thead>
+    <tbody>
+      {% for d, values in m.days %}
+      <tr><td>{{ d }}</td>{% for v in variant_names %}<td>{{ values.get(v, '—') }}</td>{% endfor %}</tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endfor %}
+  <small class="muted">День попадает в таблицу, когда полностью закрыт в виртуальном
+  времени: текущий день появится после виртуальной полуночи.</small>
+  {% endif %}
 </section>
 
 <script>
@@ -87,6 +117,7 @@ async function refreshStats() {
     if (!r.ok) return;
     const data = await r.json();
     const total = data.variants.reduce((s, v) => s + v.users, 0);
+    document.getElementById('totalUsers').textContent = total.toLocaleString('ru-RU');
     const tb = document.querySelector('#statsTable tbody');
     tb.innerHTML = data.variants.map(v => `
       <tr>

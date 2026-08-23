@@ -11,7 +11,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
 
-from .. import db
+from .. import ch, db
 from ..schemas import (
     AttachMetric,
     AudienceFilters,
@@ -158,6 +158,43 @@ async def edit_from_form(request: Request, code: str):
 
 # ---------- карточка эксперимента ----------
 
+def _fmt_value(v) -> str:
+    if v is None:
+        return "—"
+    return f"{v:,.2f}".replace(",", " ") if abs(v) >= 100 else f"{v:.4f}"
+
+
+def _metrics_daily(exp: dict) -> list[dict]:
+    """Дневные значения метрик эксперимента из витрины ClickHouse,
+    сгруппированные для отрисовки: метрика -> дни -> значения по вариантам."""
+    try:
+        rows = ch.client().query(
+            """
+            SELECT metric_code, date, variant, value
+            FROM ab.experiment_metrics_daily FINAL
+            WHERE experiment_id = {id:UInt32}
+            ORDER BY metric_code, date
+            """,
+            parameters={"id": exp["experiment_id"]},
+        ).result_rows
+    except Exception:
+        return []
+    meta = {m["code"]: m for m in exp["metrics"]}
+    grouped: dict[str, dict] = {}
+    for code, d, variant, value in rows:
+        m = grouped.setdefault(code, {
+            "name": meta.get(code, {}).get("name", code),
+            "role": meta.get(code, {}).get("role", "proxy"),
+            "days": {},
+        })
+        m["days"].setdefault(d, {})[variant] = _fmt_value(value)
+    result = []
+    for m in grouped.values():
+        m["days"] = sorted(m["days"].items(), reverse=True)
+        result.append(m)
+    return result
+
+
 @router.get("/experiments/{code}")
 def detail(request: Request, code: str):
     exp = api.get_experiment(code)
@@ -179,7 +216,9 @@ def detail(request: Request, code: str):
     return templates.TemplateResponse(
         request, "detail.html",
         _ctx(request, exp=exp, preview=preview, plan_shares=plan_shares,
-             exposure=exposure, metric_errors=metric_errors),
+             exposure=exposure, metric_errors=metric_errors,
+             metrics_daily=_metrics_daily(exp),
+             variant_names=[v["name"] for v in exp["variants"]]),
     )
 
 
