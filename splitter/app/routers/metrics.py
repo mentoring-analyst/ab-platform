@@ -19,7 +19,15 @@ def validate_metric_sql(sql_template: str) -> None:
         raise HTTPException(
             422,
             f"в sql_template нет обязательных плейсхолдеров: {missing}. "
-            "Контракт: запрос выполняется в ClickHouse по ab.events за один день и один эксперимент.",
+            "Метрика — это шаблон: DAG выполняет её для каждого эксперимента и каждого "
+            "закрытого виртуального дня, подставляя значения в плейсхолдеры. Каркас: "
+            "SELECT a.variant AS variant, <числитель> AS numerator, <знаменатель> AS denominator, "
+            "numerator/denominator AS value "
+            "FROM ab.events e INNER JOIN (SELECT user_id, variant, assigned_at "
+            "FROM ab.assignments FINAL WHERE experiment_id = {experiment_id:UInt32}) a "
+            "ON a.user_id = e.user_id "
+            "WHERE e.event_date = {date:Date} AND e.event_ts >= a.assigned_at "
+            "GROUP BY a.variant",
         )
     try:
         res = ch.client().query(
