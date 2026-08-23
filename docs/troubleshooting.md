@@ -34,6 +34,17 @@ File Sharing.
 JOIN и добавь фильтр по `event_date` — таблица партиционирована по месяцам,
 фильтр по дате читает только нужные куски.
 
+## DataGrip: ClickHouse падает с «Unknown and unmapped config properties: [databaseTerm, session_id]»
+
+Несовместимость свежего ClickHouse-драйвера с твоей версией DataGrip: новый
+драйвер убрал свойства, которые DataGrip ему передаёт. Два способа починить:
+
+1. Выбрать более старую версию драйвера: окно Data Sources and Drivers →
+   раздел **Drivers** в левой панели → **ClickHouse** → выпадашка **Version** →
+   поставь **0.6.5** (любую 0.6.x) вместо «Latest» → Test Connection.
+2. Либо обнови сам DataGrip (Help → Check for Updates) — свежие сборки
+   совместимы с новым драйвером.
+
 ## Superset показывает пустые чарты
 
 1. Проверь фильтр по времени: данные живут в ВИРТУАЛЬНОМ времени, «Last 7 days»
