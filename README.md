@@ -112,7 +112,6 @@ docker compose logs -f generator
 ### 0.4. Проверь, что всё живо
 
 - Открой админку: http://localhost:8000 — в шапке должно показываться виртуальное время.
-- Открой Swagger: http://localhost:8000/docs — дёрни `GET /sim/now`.
 
 ### 0.5. Подключи SQL-клиент
 
