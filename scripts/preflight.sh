@@ -12,9 +12,15 @@ if ! command -v docker >/dev/null 2>&1; then
     exit 1
 fi
 
-MEM_BYTES=$(docker info --format '{{.MemTotal}}' 2>/dev/null || echo 0)
-if [ "${MEM_BYTES:-0}" = "0" ]; then
-    echo "❌ Docker-демон не запущен. Открой Docker Desktop и дождись зелёного кита, затем повтори make check."
+# docker info может вернуть мусор или «0», пока демон ещё поднимается — берём
+# первую строку и проверяем, что это число больше нуля
+MEM_BYTES=$(docker info --format '{{.MemTotal}}' 2>/dev/null | head -1)
+case "$MEM_BYTES" in
+    ''|*[!0-9]*) MEM_BYTES=0 ;;
+esac
+if [ "$MEM_BYTES" -eq 0 ]; then
+    echo "❌ Docker-демон не запущен (или ещё поднимается). Открой Docker Desktop,"
+    echo "   дождись зелёного кита в меню-баре и повтори make check."
     exit 1
 fi
 echo "✅ Docker запущен"

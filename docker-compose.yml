@@ -10,6 +10,7 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: ab-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-platform}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-platform}
@@ -32,6 +33,7 @@ services:
   clickhouse:
     image: clickhouse/clickhouse-server:24.8
     container_name: ab-clickhouse
+    restart: unless-stopped
     environment:
       CLICKHOUSE_USER: ${CLICKHOUSE_USER:-default}
       CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-platform}
@@ -61,6 +63,7 @@ services:
   splitter:
     build: ./splitter
     container_name: ab-splitter
+    restart: unless-stopped
     environment:
       PG_DSN: postgresql://${POSTGRES_USER:-platform}:${POSTGRES_PASSWORD:-platform}@postgres:5432/${POSTGRES_DB:-platform}
       CH_HOST: clickhouse
@@ -87,6 +90,7 @@ services:
   generator:
     build: ./generator
     container_name: ab-generator
+    restart: unless-stopped
     environment:
       PG_DSN: postgresql://${POSTGRES_USER:-platform}:${POSTGRES_PASSWORD:-platform}@postgres:5432/${POSTGRES_DB:-platform}
       CH_HOST: clickhouse
@@ -138,6 +142,7 @@ services:
   airflow-webserver:
     build: ./airflow
     profiles: ["full"]
+    restart: unless-stopped
     environment: *airflow-env
     command: airflow webserver
     ports:
@@ -155,6 +160,7 @@ services:
   airflow-scheduler:
     build: ./airflow
     profiles: ["full"]
+    restart: unless-stopped
     environment: *airflow-env
     command: airflow scheduler
     volumes:
@@ -171,6 +177,7 @@ services:
     build: ./superset
     profiles: ["full"]
     container_name: ab-superset
+    restart: unless-stopped
     environment:
       SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY:-ab-platform-superset-secret}
       SUPERSET_ADMIN_USER: ${SUPERSET_ADMIN_USER:-admin}
