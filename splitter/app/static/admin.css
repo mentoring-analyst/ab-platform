@@ -184,6 +184,13 @@ label small { display: block; font-weight: 400; margin-top: 3px; }
 .table td { padding: 9px 10px; border-bottom: 1px solid var(--border); }
 
 /* ---------- прочее ---------- */
+.srm-line { margin: 10px 0 4px; font-size: 14px; }
+.srm-ok { color: var(--ok); font-weight: 600; }
+.srm-warn { color: #b45309; font-weight: 600; }
+.srm-bad { color: var(--danger); font-weight: 700; }
+.legend { display: flex; gap: 16px; font-size: 13px; color: var(--muted); }
+.legend-item { display: inline-flex; align-items: center; gap: 6px; }
+
 .flash {
     background: #fef2f2;
     border: 1px solid #fecaca;

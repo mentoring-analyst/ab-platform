@@ -158,6 +158,35 @@ async def edit_from_form(request: Request, code: str):
 
 # ---------- карточка эксперимента ----------
 
+def _accrual(exp: dict) -> dict:
+    """Кривая набора аудитории: накопительное число пользователей по вариантам
+    по виртуальным дням (для графика на странице эксперимента)."""
+    rows = db.fetch_all(
+        """
+        SELECT assigned_at::date AS day, variant, count(*) AS users
+        FROM ab.assignments
+        WHERE experiment_id = %(id)s
+        GROUP BY 1, 2
+        ORDER BY 1
+        """,
+        {"id": exp["experiment_id"]},
+    )
+    if not rows:
+        return {"days": [], "series": {}}
+    days = sorted({r["day"] for r in rows})
+    per_variant: dict[str, dict] = {}
+    for r in rows:
+        per_variant.setdefault(r["variant"], {})[r["day"]] = r["users"]
+    series = {}
+    for variant, by_day in per_variant.items():
+        cum, arr = 0, []
+        for d in days:
+            cum += by_day.get(d, 0)
+            arr.append(cum)
+        series[variant] = arr
+    return {"days": [d.isoformat() for d in days], "series": series}
+
+
 def _fmt_value(v) -> str:
     if v is None:
         return "—"
@@ -218,6 +247,7 @@ def detail(request: Request, code: str):
         _ctx(request, exp=exp, preview=preview, plan_shares=plan_shares,
              exposure=exposure, metric_errors=metric_errors,
              metrics_daily=_metrics_daily(exp),
+             accrual=_accrual(exp),
              variant_names=[v["name"] for v in exp["variants"]]),
     )
 
