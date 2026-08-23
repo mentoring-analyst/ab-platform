@@ -179,9 +179,13 @@ docker compose logs -f generator
 **ClickHouse:**
 
 1. **+ → Data Source → ClickHouse**.
-2. Host `localhost`, Port `8123`, User `default`, Password `platform`.
-3. Download драйвера → **Test Connection** → OK.
-4. В списке схем отметь базу **ab**.
+2. Host `localhost`, Port `8123`, User `default`, Password `platform`,
+   Database `ab` — обязательно **маленькими буквами**, ClickHouse чувствителен
+   к регистру.
+3. Рядом с полем Driver будет написано «Not downloaded» — нажми ссылку
+   **Download** (без этого будет ошибка «Driver class … not found»).
+4. **Test Connection** → зелёная галочка → OK.
+5. В списке схем отметь базу **ab**.
 
 **Как выполнить запрос:** открой консоль источника (правой кнопкой по
 соединению → New → Query Console), пиши запрос и выполняй Cmd/Ctrl+Enter.
