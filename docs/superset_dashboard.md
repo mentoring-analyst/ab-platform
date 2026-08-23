@@ -66,7 +66,7 @@ ORDER BY variant
 
 ## Чарт 3. Динамика метрик по дням (Line Chart, ClickHouse)
 
-Витрину наполняет DAG `ab_experiment_metrics` — включи его в Airflow.
+Витрину автоматически наполняет фоновый воркер платформы — включать ничего не нужно.
 
 ```sql
 SELECT date, variant, metric_code, value

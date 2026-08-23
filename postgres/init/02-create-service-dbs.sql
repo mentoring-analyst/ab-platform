@@ -1,3 +1,2 @@
--- Отдельные базы для метаданных Airflow и Superset в том же инстансе Postgres
-CREATE DATABASE airflow;
+-- Отдельная база для метаданных Superset в том же инстансе Postgres
 CREATE DATABASE superset;

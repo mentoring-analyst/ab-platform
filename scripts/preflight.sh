@@ -50,7 +50,7 @@ else
 fi
 
 # 4. Свободны ли порты
-for PORT in 5434 8000 8081 8089 8123 9001; do
+for PORT in 5434 8000 8089 8123 9001; do
     if lsof -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1; then
         echo "⚠️  Порт $PORT занят другим процессом — соответствующий сервис не поднимется."
     fi

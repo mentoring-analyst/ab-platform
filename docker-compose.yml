@@ -113,65 +113,7 @@ services:
         limits:
           memory: 768M
 
-  # ---------- Полный профиль: --profile full ----------
-
-  airflow-init:
-    build: ./airflow
-    profiles: ["full"]
-    environment: &airflow-env
-      AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
-      AIRFLOW__CORE__PARALLELISM: "4"
-      AIRFLOW__CORE__MAX_ACTIVE_TASKS_PER_DAG: "4"
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-platform}:${POSTGRES_PASSWORD:-platform}@postgres:5432/airflow
-      AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY:-ab-platform-airflow}
-      # Подключения для DAG-ов
-      PG_DSN: postgresql://${POSTGRES_USER:-platform}:${POSTGRES_PASSWORD:-platform}@postgres:5432/${POSTGRES_DB:-platform}
-      CH_HOST: clickhouse
-      CH_PORT: "8123"
-      CH_USER: ${CLICKHOUSE_USER:-default}
-      CH_PASSWORD: ${CLICKHOUSE_PASSWORD:-platform}
-    command: >
-      bash -c "airflow db migrate &&
-      airflow users create --username ${AIRFLOW_ADMIN_USER:-admin} --password ${AIRFLOW_ADMIN_PASSWORD:-admin}
-      --firstname Admin --lastname Admin --role Admin --email admin@example.com"
-    depends_on:
-      postgres:
-        condition: service_healthy
-
-  airflow-webserver:
-    build: ./airflow
-    profiles: ["full"]
-    restart: unless-stopped
-    environment: *airflow-env
-    command: airflow webserver
-    ports:
-      - "8081:8080"   # 8081 снаружи, чтобы не конфликтовать с data-platform
-    volumes:
-      - ./airflow/dags:/opt/airflow/dags:ro
-    depends_on:
-      airflow-init:
-        condition: service_completed_successfully
-    deploy:
-      resources:
-        limits:
-          memory: 1200M
-
-  airflow-scheduler:
-    build: ./airflow
-    profiles: ["full"]
-    restart: unless-stopped
-    environment: *airflow-env
-    command: airflow scheduler
-    volumes:
-      - ./airflow/dags:/opt/airflow/dags:ro
-    depends_on:
-      airflow-init:
-        condition: service_completed_successfully
-    deploy:
-      resources:
-        limits:
-          memory: 1500M
+  # ---------- Полный профиль (--profile full): + Superset для бонус-уровня ----------
 
   superset:
     build: ./superset

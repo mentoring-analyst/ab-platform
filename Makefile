@@ -8,7 +8,7 @@ check:
 up: check
 	docker compose up -d --build
 
-# Полный профиль: + Airflow + Superset (~6 ГБ)
+# Полный профиль: + Superset для бонусного дашборда
 up-full: check
 	docker compose --profile full up -d --build
 

@@ -1,3 +1,5 @@
+import asyncio
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -5,8 +7,16 @@ from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import db
+from . import db, metrics_worker
 from .routers import admin, experiments, metrics
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    worker = asyncio.create_task(metrics_worker.run_forever())
+    yield
+    worker.cancel()
+
 
 app = FastAPI(
     title="AB Platform — Experiment Manager",
@@ -17,6 +27,7 @@ app = FastAPI(
     version="0.1.0",
     docs_url=None,
     redoc_url=None,
+    lifespan=lifespan,
 )
 
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
