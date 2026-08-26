@@ -207,7 +207,9 @@ SELECT count(), min(event_date), max(event_date) FROM ab.events;
 
 ## Шаг 1. Погрузись в данные
 
-Прежде чем что-то тестировать, аналитик разбирается, как устроен продукт в данных.
+Прежде чем что-то тестировать, аналитик разбирается, как устроен продукт
+в данных. Полное описание всех таблиц обеих баз — [docs/tables.md](docs/tables.md).
+
 События воронки в `ab.events` (ClickHouse):
 `app_open → screen_view → tariff_select → order_confirm → trip_complete / order_cancelled`.
 У событий экрана есть поля цены: `price_low`/`price_high` (диапазон) и
@@ -452,7 +454,7 @@ generator/              # симулятор трафика: популяция,
 postgres/init/          # схемы core (пользователи) и ab (эксперименты)
 clickhouse/init/        # ab.events, ab.assignments, витрина метрик
 templates/              # карточка, ноутбуки расчёта выборки и анализа
-docs/                   # troubleshooting, гайд ментора
+docs/                   # документация таблиц, troubleshooting, гайд ментора
 ```
 
 Эффекты вариантов зашиты в закодированный сценарий генератора — не декодируй
