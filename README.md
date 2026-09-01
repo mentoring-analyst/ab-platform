@@ -86,6 +86,17 @@ Mac — Docker Desktop → Settings → Resources → Memory; Windows — фай
 cd ~ && git clone https://github.com/mentoring-analyst/ab-platform.git && cd ab-platform
 ```
 
+**Windows**: все команды проекта выполняй в терминале WSL — открой «Ubuntu»
+из меню Пуск (не PowerShell и не cmd). Клонируй проект в домашнюю папку WSL
+(`cd ~`), не на диск `C:\`. Если `make` не найден:
+
+```bash
+sudo apt update && sudo apt install -y make
+```
+
+Если в WSL не находится `docker` — включи Docker Desktop → Settings →
+Resources → **WSL Integration** для своего дистрибутива.
+
 ### 0.3. Проверь окружение и подними стек
 
 ```bash

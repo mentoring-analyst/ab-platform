@@ -1,5 +1,23 @@
 # Частые проблемы и что с ними делать
 
+## Windows: скрипты падают с `\r: command not found` или `bad interpreter`
+
+Git на Windows подменил переводы строк (CRLF), и Linux-контейнеры не могут
+выполнить скрипты. В репозитории стоит `.gitattributes`, который это
+предотвращает, — если клонировал старую версию, просто переклонируй проект.
+И работай из терминала WSL (Ubuntu), а не из PowerShell.
+
+## Windows: `make: command not found`
+
+```
+sudo apt update && sudo apt install -y make
+```
+
+## Windows: в WSL нет команды `docker`
+
+Docker Desktop → Settings → Resources → **WSL Integration** → включи для
+своего дистрибутива → Apply & Restart.
+
 ## Контейнер умер с кодом 137 / `Exited (137)`
 
 137 = процесс убит из-за нехватки памяти (OOM). Это штатная защита: у каждого
