@@ -87,6 +87,23 @@ JOIN и добавь фильтр по `event_date` — таблица парт�
    таблиц (в статус-баре видно «Introspecting…»). Это одноразово — подожди.
 
 
+## Ноутбук в Colab: `Connection refused` к localhost:8123
+
+Colab выполняет код на сервере Google — `localhost` там не твой компьютер,
+и твой докер оттуда недоступен. Запускай ноутбук локально: VS Code
+с расширением Jupyter, либо в папке проекта:
+
+```
+pip install notebook clickhouse-connect pandas numpy scipy statsmodels
+jupyter notebook
+```
+
+## Как соединить данные Postgres и ClickHouse
+
+Никак внутри SQL: это две разные базы, JOIN между ними не пишется. Делай два
+запроса — по одному в каждую базу — и сопоставляй результаты в Python
+(в ноутбуках для этого есть `q_pg()` и `q_ch()`).
+
 ## Генератор «молчит», событий не прибавляется
 
 `docker compose logs -f generator`. При первом старте он несколько минут наливает
