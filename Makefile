@@ -1,4 +1,4 @@
-.PHONY: check up down reset logs ps
+.PHONY: check up down reset logs ps notebook notebook-token
 
 # Предполётная проверка: докер запущен, памяти хватает, .env на месте
 check:
@@ -20,3 +20,11 @@ logs:
 
 ps:
 	docker compose ps
+
+# JupyterLab с готовыми библиотеками; базы поднимаются как зависимости
+notebook: check
+	docker compose --profile notebooks up -d --build jupyter
+	@echo "Открой http://localhost:8888. Токен: make notebook-token (после старта сервера)."
+
+notebook-token:
+	docker compose exec -T jupyter jupyter server list

@@ -1,0 +1,13 @@
+jupyterlab>=4.2,<5
+ipykernel>=6.29,<7
+pandas>=2.2,<3
+numpy>=2,<3
+scipy>=1.14,<2
+statsmodels>=0.14,<0.15
+matplotlib>=3.9,<4
+seaborn>=0.13,<0.14
+clickhouse-connect>=0.8,<1
+SQLAlchemy>=2,<3
+psycopg[binary]>=3.2,<4
+requests>=2.32,<3
+psycopg2-binary>=2.9,<3

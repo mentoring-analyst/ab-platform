@@ -112,6 +112,37 @@ services:
         limits:
           memory: 768M
 
+  jupyter:
+    profiles: ["notebooks"]
+    build: ./jupyter
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8888:8888"
+    volumes:
+      - ./notebooks:/workspace
+      - ./templates:/workspace/templates
+      - jupyter-home:/root/.local/share/jupyter
+    environment:
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGUSER: ${POSTGRES_USER:-platform}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-platform}
+      PGDATABASE: ${POSTGRES_DB:-platform}
+      CH_HOST: clickhouse
+      CH_PORT: "8123"
+      CH_USER: ${CLICKHOUSE_USER:-default}
+      CH_PASSWORD: ${CLICKHOUSE_PASSWORD:-platform}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
 volumes:
   pg-data:
   ch-data:
+  jupyter-home:
